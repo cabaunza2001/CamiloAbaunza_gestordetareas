@@ -1,5 +1,6 @@
+ 
 """
-Fecha: Noviembre 02 2020
+Fecha: Diciembre 11 2020
 Autor: Camilo Andres Abaunza Suarez
 Documentacion:
 Programa GESTOR DE TAREAS
@@ -14,85 +15,535 @@ la organización a la hora de realizar las diferentes actividades.
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
+import os      #para datos pantalla
+import ctypes  #para datos pantalla
+from datetime import datetime   #para manejo de fechas y hora
+import calendar  #para mostrar el calendario del mes
+from os import remove  #para poder borrar archivos
+  
 
 #Definicion de variables
 NumTareas = 10   #Cantidad de tareas habilitadas por defecto.
-tareas = ['Arreglar Patio', 'Barrer', 'Lavar Loza','Lavar Ropa', 'Limpiar Baños', 'Limpiar Cocina', 'Limpiar Ventanas', 'Organizar Habitaciones', 'Planchar Ropa', 'Trapear Hall']
+vtareasinicial = ['Arreglar Patio', 'Barrer', 'Lavar Loza','Lavar Ropa', 'Limpiar Baños', 'Limpiar Cocina', 'Limpiar Ventanas', 'Organizar Habitaciones', 'Planchar Ropa', 'Trapear Hall']
+vtareas = ['Arreglar Patio', 'Barrer', 'Lavar Loza','Lavar Ropa', 'Limpiar Baños', 'Limpiar Cocina', 'Limpiar Ventanas', 'Organizar Habitaciones', 'Planchar Ropa', 'Trapear Hall']
 vector_integrantes = []
 vector_integrantes.append('')
 vector_tareas = []
 vector_tareas.append('')
 ContadorTareas = 1
 ContadorIntegrantes = 1
+TituloVentana = 'Gestor de Tareas (Beta 2.0)'
+fecha = datetime.now()
+year = fecha.year    #Anno actual
+mes = fecha.month    #Mes actual
+N_Mes = fecha.strftime("%B") #Nombre del mes
+dia = fecha.day      #Dia actual
+FechaHoraActual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 
-#Se declara funcion principal
-def GestorTareas():
-    ventanaprincipal = Tk()
-    ventanaprincipal.geometry('500x500')
-    ventanaprincipal.title('Gestor de Tareas (Beta 1.0)')
-    #num_integrantes = IntVar(value=1)
 
-    #Menu con opcion para salir de la aplicacion
-    menu = Menu(ventanaprincipal)
-    new_item = Menu(menu)
-    new_item.add_command(label='Salir', command=ventanaprincipal.destroy)
-    menu.add_cascade(label='Archivo', menu=new_item)
-    ventanaprincipal.config(menu=menu)    
-    #Fin Menu
-
-    #Control para seleccion de numero de integrantes
-    texto1 = tk.Label(ventanaprincipal, text = 'Seleccione el número de integrantes: ', font=('Arial bold',10))
-    texto1.grid(column=0, row=2)
-    caja1 = Spinbox(ventanaprincipal, from_=1, to=10, wrap=True, state='readonly', width = 5)
-    caja1.grid(column = 1 , row = 2)
+obj = calendar.Calendar() 
+global dias_mes
+dias = []
+dias_mes = []
+for day in obj.itermonthdays(year, mes): 
+    dias.append(day)
+dias.sort()    
+largo = len(dias)
+for i in range(0,largo):
+    if dias[i] != 0:
+        dias_mes.append(dias[i])
     
-    #Mostrar lista tareas a modo referencial nada mas
-    
-    Texto2 = tk.Label(ventanaprincipal, text = 'Lista de tareas existentes: ', font=('Arial bold', 10))
-    Texto2.grid(column=0, row=6)
-    combo_tareas = ttk.Combobox(ventanaprincipal, state='readonly')
-    combo_tareas['values'] = ['Arreglar Patio', 'Barrer', 'Lavar Loza','Lavar Ropa', 'Limpiar Baños', 'Limpiar Cocina', 'Limpiar Ventanas', 'Organizar Habitaciones', 'Planchar Ropa', 'Trapear Hall']
-    combo_tareas.current(0)
-    combo_tareas.grid(column = 1 , row = 6)
 
+#------------------------------------------------------ 
+#funcion para generar coordenadas de ubicacion de ventana
+def centrar_pantalla(alt_v,anc_v):
+    global X
+    global Y
+    global alto
+    global ancho
+    user32 = ctypes.windll.user32
+    user32.SetProcessDPIAware()
+    altop = user32.GetSystemMetrics(1)
+    anchop = user32.GetSystemMetrics(0)
+    alto = alt_v
+    ancho = anc_v
+    Y = (altop - alt_v) / 2
+    X = (anchop - anc_v) / 2
     
-    ###Inicio Funcion Asignar Tareas
-    def AsignarTareas():
-        NumTareas = 10   #Cantidad de tareas habilitadas por defecto. 10 tareas y en la primer posicion valor en blanco
-        vector_integrantes = []
-        vector_tareas = []
-        ContadorTareas = 0
-        ContadorIntegrantes = 1
-        TotalIntegrantes = int(caja1.get()) #aca se debe tomar el valor de la caja1
- 
-        while ContadorTareas < NumTareas: #Control de tareas asignadas
-            if ContadorIntegrantes <= TotalIntegrantes:
-                vector_integrantes.append(ContadorIntegrantes)
-                vector_tareas.append(tareas[ContadorTareas])
-                print('Integrante: ',vector_integrantes[ContadorIntegrantes-1],'Tarea: ',vector_tareas[ContadorTareas])  #Imprime la asignacion por Shell
-                if ContadorTareas < NumTareas:
-                    ContadorTareas = ContadorTareas + 1
-                if ContadorIntegrantes <= TotalIntegrantes:
-                    ContadorIntegrantes = ContadorIntegrantes + 1
+#------------------------------------------------------ 
+def Ver_Calendario():
+    # Mostrar calendario para mes actual
+    datos_mes = calendar.month(year, mes)
+    print(datos_mes)
+    
+#------------------------------------------------------ 
+#******************************** INICIO LOGIN ************************************
+#**********************************************************************************
+#Ventana para gestionar inicio de sesion de usuarios
+#Se maneja cuenta por defecto Admin para la gestion de las tareas con clave Admin
+def v_inicio_sesion():
+    global ventana_login_registro    
+    ColorFondoBoton="dark cyan"
+    ventana_login_registro=Tk()
+    centrar_pantalla(250,300)
+    ventana_login_registro.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    ventana_login_registro.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    ventana_login_registro.title("Inicio de Sesion")
+    Label(text="").pack()
+    Button(text="Entrar", height="2", width="30", bg=ColorFondoBoton, command=login).pack() #Boton de login
+    Label(text="").pack()
+    Button(text="Registrarse", height="2", width="30", bg=ColorFondoBoton, command=registro).pack() #Boton para registrar usuarios adicionales
+    Label(text="").pack()
+    ventana_login_registro.resizable(0,0) # no redimensionar
+    ventana_login_registro.mainloop()
+    
+#------------------------------------------------------ 
+#Funcion para mostrar la ventana de creacion de cuentas
+def registro():
+    global v_registro   #ventana para hacer registro de usuario
+    v_registro = Tk()
+    v_registro.title("Registrar cuenta")
+    centrar_pantalla(250,300)
+    v_registro.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    v_registro.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    v_registro.resizable(0,0)
+    global nombre_usuario
+    global clave
+    global entrada_nombre
+    global entrada_clave
+    nombre_usuario = StringVar() #Iniciar variable para usuario
+    clave = StringVar() #iniciar variable para clave
+    Label(v_registro, text="").pack()
+    etiqueta_nombre = Label(v_registro, text="Nombre de usuario (*) ")
+    etiqueta_nombre.pack()
+    entrada_nombre = Entry(v_registro, textvariable=nombre_usuario) #Caja para ingresar nombre usuario
+    entrada_nombre.pack()
+    etiqueta_clave = Label(v_registro, text="Contraseña (*) ")
+    etiqueta_clave.pack()
+    entrada_clave = Entry(v_registro, textvariable=clave, show='*') #Caja para ingresar la clave
+    entrada_clave.pack()
+    Label(v_registro, text="").pack()
+    Button(v_registro, text="Registrar", width=10, height=1, command = registro_usuario).pack() #Boton para guardar registro usuario
+    
+#------------------------------------------------------ 
+#Funcion para almacenar el usuario creado en la ruta de ejecucion de la APP
+def registro_usuario():
+    usuario_info = entrada_nombre.get()   #Se toma dato de la caja de texto
+    clave_info = entrada_clave.get()      #Se toma dato de la caja de texto
+    #rutina para creacion y almacenamiento de la info 
+    file = open('usr_'+usuario_info, "w") #Se crea archivo con el nombre y clave ingresados. se adiciona usr_ para identificacion de cuentas
+    file.write('usr_'+usuario_info + "\n")
+    file.write(clave_info)
+    file.close()
+    #fin rutinas
+    entrada_nombre.delete(0, END)
+    entrada_clave.delete(0, END)
+    registro_correcto_usuario()
+    
+#------------------------------------------------------ 
+#Funcion que muestra ventana de notificacion de cuenta creada correctamente
+def registro_correcto_usuario():
+    global ventana_registro_correcto
+    ventana_registro_correcto = Toplevel(ventanaprincipal)
+    ventana_registro_correcto.title("OK")
+    centrar_pantalla(250,300)
+    ventana_registro_correcto.resizable(0,0)
+    ventana_registro_correcto.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    ventana_registro_correcto.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    Label(ventana_registro_correcto, text="Cuenta creada!").pack()
+    Button(ventana_registro_correcto, text="OK", command=cerrar_registro_correcto).pack()   #Para descargar la ventana de notificacion
+    
+    
+#------------------------------------------------------ 
+def cerrar_registro_correcto():
+    lista_archivos = os.listdir()  #actualiza lista de archivos en la ubicacion de la APP
+    GeneraListaUsr(lista_archivos) #Actualiza diccionario de cuentas usr_
+    ventana_registro_correcto.destroy()
+    v_registro.destroy()
+#------------------------------------------------------     
+#Funcion para realizar la autenticacion de usuario para ingreso a la APP
+def login():
+    global ventana_login
+    global verificar_usuario
+    global verifica_clave
+    global entrada_login_usuario
+    global entrada_login_clave
+
+    ventana_login = Tk()
+    ventana_login.title("Acceso a la cuenta")
+    centrar_pantalla(250,300) 
+    ventana_login.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    ventana_login.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    Label(ventana_login, text="").pack()
+    verificar_usuario = StringVar()
+    verifica_clave = StringVar()
+    Label(ventana_login, text="Nombre usuario (*) ").pack()
+    entrada_login_usuario = Entry(ventana_login, textvariable=verificar_usuario)
+    entrada_login_usuario.pack()
+    entrada_login_usuario.focus() #ubica cursor en el campo de usuario
+    Label(ventana_login, text="").pack()
+    Label(ventana_login, text="Contraseña (*) ").pack()
+    entrada_login_clave = Entry(ventana_login, textvariable=verifica_clave, show= '*')
+    entrada_login_clave.pack()
+    Label(ventana_login, text="").pack()
+    Button(ventana_login, text="Acceder", width=10, height=1, command = verifica_login).pack()
+    ventana_login.resizable(0,0) #Deshabilita boton de maximizar ventana
+    
+#------------------------------------------------------ 
+#Funcion para validar las credenciales de usuario ingresadas
+def verifica_login():
+    global lista_archivos
+    global dato_usr_original
+    global login_usuario
+    login_usuario = verificar_usuario.get()
+    usuario = 'usr_' + verificar_usuario.get()  #formato final nombre usuario
+    clave = verifica_clave.get()
+    entrada_login_usuario.delete(0, END) #elimina contenido de la caja
+    entrada_login_clave.delete(0, END) #elimina contenido de la caja
+    lista_archivos = os.listdir() #Lista de archivos dentro del directorio de ejecucion de la App
+    GeneraListaUsr(lista_archivos) #Genera Diccionario con cuentas de usuario existentes en la ruta, solo los usr_
+
+    #Si existe la cuenta de usuario ingresada
+    if usuario in lista_archivos:
+        archivo = open(usuario, "r") #Abre archivo
+        verifica = archivo.read().splitlines() #Leer archivo
+        #Si existe la clave
+        if clave in verifica:
+            if usuario == 'usr_Admin': #Abre ventana Administrador
+                ventana_login.destroy()
+                GestorTareas() #Inicia APP 
             else:
-                ContadorIntegrantes = 1  #reinicia para asignar nueva ronda de tareas
-        print()     
-    ###Final funcion Asignar tareas
-       
+                #login_correcto() #Se permite el acceso al usuario
+                GestorTareasUsuario()
+                
+        #Si no existe la clave
+        else:
+            error_clave() #Funcion para error clave
+    #Si el usuario no se encuentra
+    else:
+        error_usuario() #Funcion cuando no se encuentra el usuario
+
+#------------------------------------------------------ 
+#Lee los archivos de la ubicacion de ejecucion de la APP y carga diccionario con los archivos con nombre usr_
+def GeneraListaUsr(vector_usr): #Se recibe lista de archivos del directorio de la APP como vector_usr para revision
+    global Vec_Usr
+    Dic_Usr = {}  #Diccionario de usuarios
+    Vec_Usr = []  #Vector de usuarios
+    LargoLista = len(vector_usr)  #para saber cuantos elementos se cargaron en el vector 
+    for i in range(0,LargoLista):
+        dato = vector_usr[i]
+        aux_usr = 'usr_'
+        
+        borrar = 'usr_borrar'   #prueba para borrado archivo
+        if aux_usr in dato and dato != 'usr_Admin':
+            Dic_Usr[i] = dato
+            Vec_Usr.append(dato)  #Agrega la cuenta de usuario al vector
+        if borrar in dato:  #de referencia para eliminar
+            remove(borrar)
+            print('Archivo ',borrar,' eliminado')
+            lista_archivos = os.listdir()  #actualiza lista de archivos ubicacion
+            GeneraListaUsr(lista_archivos) #Actualizacion del vector usuarios
+
+#------------------------------------------------------
+#Lee los archivos de la ubicacion de ejecucion de la APP y carga diccionario con los archivos con nombre Task_            
+def GeneraListaTask(vector_task): #se recibe lista archivos del directorio de la APP para revision
+    global Vec_Task
+    Vec_Task = []  #Vector de usuarios
+    LargoLista = len(vector_task)  #para saber cuantos elementos se cargaron en el vector 
+    for i in range(0,LargoLista):
+        dato = vector_task[i]
+        aux_task = 'Task_'
+
+        if aux_task in dato:
+            Vec_Task.append(dato)  #Agrega la cuenta de usuario al vector
+
+    print('Vector de tareas: ',Vec_Task)
+#------------------------------------------------------ 
+#Funcion para login de usuario correcto 
+def login_correcto():
+    global ventana_login_correcto
+    ventana_login_correcto = Toplevel(ventana_login)
+    ventana_login_correcto.title("Inicio de sesion correcto ")
+    centrar_pantalla(250,300)
+    ventana_login_correcto.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    ventana_login_correcto.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    #Button(ventana_login_correcto, text="OK", command=cerrar_login_correcto).pack()
+    Button(ventana_login_correcto, text="OK", command=GestorTareasUsuario).pack()
+    
+    ventana_login_correcto.resizable(0,0)
+    
+#------------------------------------------------------ 
+def cerrar_login_correcto():
+    ventana_login_correcto.destroy()
+    ventana_login.destroy()
+    print('Aca ventana para usuario')
+    
+#------------------------------------------------------  
+#Funcion para login de usuario incorrecto
+def error_clave():
+    global ventana_error_clave
+    ventana_error_clave = Toplevel(ventana_login)
+    ventana_error_clave.title("Alerta!")
+    centrar_pantalla(300,250)
+    ventana_error_clave.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    ventana_error_clave.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    Label(ventana_error_clave, text="Usuario o clave incorrecta ").pack()
+    Button(ventana_error_clave, text="OK", command=cerrar_error_clave).pack()
+    ventana_error_clave.resizable(0,0)
+    
+#------------------------------------------------------ 
+def cerrar_error_clave():
+    ventana_error_clave.destroy()
+    
+#------------------------------------------------------  
+#Funcion para error usuario
+def error_usuario():
+    global ventana_error_usuario
+    ventana_error_usuario = Toplevel(ventana_login)
+    ventana_error_usuario.title("Alerta!")
+    centrar_pantalla(250,300)
+    ventana_error_usuario.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    ventana_error_usuario.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    Label(ventana_error_usuario, text="Usuario o clave incorrecta").pack()
+    Button(ventana_error_usuario, text="OK", command=cerrar_error_usuario).pack()
+    ventana_error_usuario.resizable(0,0)
+    
+#------------------------------------------------------   
+def cerrar_error_usuario():
+    ventana_error_usuario.destroy()
+   
+
+#******************************** FIN LOGIN **************************************
+#*********************************************************************************
+
+
+
+#------------------------------------------------------ 
+#Funcion para mostrar los usuarios existentes
+def Mostrar_Usuarios():
+    aux_LU = len(Vec_Usr)
+    for i in range(0,aux_LU):
+        dato = Vec_Usr[i]
+        usuario = dato[4:] #se quita el prefijo usr_
+        print(usuario)
+    print()
+#------------------------------------------------------ 
+#Funcion para mostrar las tareas existentes
+def Mostrar_Tareas():
+    aux_LT = len(vtareas)
+    for i in range(0,aux_LT):
+        print(vtareas[i])
+    print()
+#------------------------------------------------------ 
+#Funcion para mostrar el calendario del mes
+def Mostrar_Dias_Mes():
+    print(dias_mes)
+    print()
+#------------------------------------------------------ 
+#Funcion asociada al menu para Asignar Tareas
+def OpcMenu_AsignarTareas():
+    global VentanaTareas
+    VentanaTareas = Tk()
+    centrar_pantalla(250,500)
+    VentanaTareas.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    VentanaTareas.title('Asignar Tareas'+' < '+login_usuario+' > ')
+    VentanaTareas.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    VentanaTareas.resizable(0,0)
+
+    #------------------------------------------------------ 
+    def GuardaAsignacionTareas(dato_usr,dato_task,dato_dia):
+        #rutina para creacion y almacenamiento de la info       
+
+        a = dato_task  #auxiliar
+        b = a.replace(" ", "")  #Elimina espacion en blanco del nombre de la tarea
+        usuario = dato_usr[4:] #se quita el prefijo usr_
+        archivo = 'Task_'+usuario+'_'+b  #      
+
+        with open (archivo, "a") as file:   #abre en modo apertura adicionando la info al final del archivo si existe, sino lo crea
+            file.tell()  #Se ubica el cursor al final del archivo antes de adicionar informacion
+            file.write("Actividad:"+" "+dato_task + "\n")
+            file.write("Programada para el: "+ " " + str(dato_dia) + " " + str(N_Mes) + " " + str(year) + "\n")
+            file.write("Asignada el: "+ FechaHoraActual+ "\n")
+            file.close()
+            
+        #Actualizacion datos directorio    
+        lista_archivos = os.listdir()  #actualiza lista de archivos ubicacion
+        GeneraListaTask(lista_archivos) #Actualizacion del vector tareas       
+    #------------------------------------------------------ 
+    def boton2_pulsar(): #Boton asignar tareas
+        valor_combo_usr = combo_usuarios.get()
+        valor_combo_tarea = combo_tareas.get()
+        valor_combo_dias = combo_dias.get()
+        
+        #aca actualizar vector de tareas para marcar la que fue asignada
+        auxb2 = len(vtareas)
+        bandera = 'Asignada_'
+        for i in range (0, auxb2):
+            if bandera in valor_combo_tarea: #La tarea ya esta marcada como asignada
+                MSG = 'La tarea ya no esta disponible'
+                
+            else:
+                if valor_combo_tarea == vtareas[i]: #Se marca para indicar que ya esta asignada
+                    tarea_asig = 'Asignada_'+valor_combo_tarea
+                    vtareas[i] = tarea_asig
+                    combo_tareas['values'] = vtareas
+                    combo_tareas.current(0)
+                    MSG = 'Usuario: '+' '+valor_combo_usr,'Tarea: '+' '+valor_combo_tarea,'Dia realizacion: '+' '+valor_combo_dias+' '+N_Mes
+                    GuardaAsignacionTareas(valor_combo_usr,valor_combo_tarea,valor_combo_dias)                 
+
+        print(MSG) #mensaje informativo segun corresponda
+            
+#------------------------------------------------------
+    def boton3_pulsar(): #Boton para ver calendario
+        Ver_Calendario()
+
+    #Menu inicio
+    menu = Menu(VentanaTareas)
+    new_item = Menu(menu)
+    menu.add_cascade(label='Archivo', menu=new_item)
+    new_item.add_command(label='Ver Calendario', command=Ver_Calendario)  #Muestra por consola el calendario del mes
+    new_item.add_command(label='Ver Usuarios', command=Mostrar_Usuarios)  #Muestra la lista de usuarios exitentes
+    new_item.add_command(label='Ver Tareas', command=Mostrar_Tareas)      #Muestra las tareas existentes
+    new_item.add_command(label='Ver Dias Mes', command=Mostrar_Dias_Mes)  #Muestra los dias del mes
+    VentanaTareas.config(menu=menu)    
+    #Fin Menu
+        
+    #Mostrar lista tareas existentes para asociar a un usuario
+    Texto2 = tk.Label(VentanaTareas, text = 'Lista de tareas existentes: ', font=('Arial bold', 10))
+    Texto2.grid(column=0, row=60)
+    combo_tareas = ttk.Combobox(VentanaTareas, state='readonly')   
+    #combo_tareas['values'] = ['Arreglar Patio', 'Barrer', 'Lavar Loza','Lavar Ropa', 'Limpiar Baños', 'Limpiar Cocina', 'Limpiar Ventanas', 'Organizar Habitaciones', 'Planchar Ropa', 'Trapear Hall']
+    combo_tareas['values'] = vtareas  #Asocia el vector de tareas
+    combo_tareas.current(0)
+    combo_tareas.grid(column = 1 , row = 60)
+
+    #Mostrar lista de usuarios existentes para asociar a tareas
+    Texto3 = tk.Label(VentanaTareas, text = 'Lista de usuarios existentes: ', font=('Arial bold', 10))
+    Texto3.grid(column=0, row=120)
+    combo_usuarios = ttk.Combobox(VentanaTareas, state='readonly')
+    combo_usuarios['values'] = Vec_Usr   #asocia el contenido del vector de usuarios
+    combo_usuarios.current(0)
+    combo_usuarios.grid(column = 1 , row = 120)    
+
+    #Mostrar lista de dias del mes
+    Texto4 = tk.Label(VentanaTareas, text = 'Lista de dias mes actual: ', font=('Arial bold', 10))
+    Texto4.grid(column=0, row=180)
+    combo_dias = ttk.Combobox(VentanaTareas, state='readonly')
+    combo_dias['values'] = dias_mes   #asocia el contenido del vector de usuarios
+    combo_dias.current(dia-1) #ubica en el dia actual
+    combo_dias.grid(column = 1 , row = 180) 
 
     #Boton para asignar tareas de forma automatica
-    boton2 = Button(ventanaprincipal, text=" Asignar Tareas ", bg="red",fg="white", command=AsignarTareas)
-    boton2.grid(column=6, row=6)
+    boton2 = Button(VentanaTareas, text=" Asignar Tareas ", bg="red",fg="white", command=boton2_pulsar)    
+    boton2.grid(column=0, row=300)
+    
+    #Boton para ver calendario en consola
+    boton3 = Button(VentanaTareas, text=" Ver Calendario ", bg="blue",fg="white", command=boton3_pulsar)
+    boton3.grid(column=1, row=300)    
+    
+#------------------------------------------------------
+def GestorTareasUsuario():
+    ventana_login.destroy()
+    global VentanaUsuario
+    VentanaUsuario = Tk()
+    centrar_pantalla(500,500)
+    VentanaUsuario.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    VentanaUsuario.title(TituloVentana+' < '+login_usuario+' > ')
+    VentanaUsuario.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    VentanaUsuario.resizable(0,0)
+
+    lista_archivos = os.listdir()  #actualiza lista de archivos ubicacion
+    GeneraListaTask(lista_archivos) #Actualizacion del vector tareas
+    AuxVecTask = []
+    AuxNomTask = 'Task_'+login_usuario+'_'
+
+    def boton4_pulsar(): #Boton para ver la info de la tarea
+        valor_combo_tareas_usuario = combo_tareas_usuario.get()
+        ArchivoNomTarea = AuxNomTask+valor_combo_tareas_usuario
+        print(ArchivoNomTarea)
+        #Abre archivo
+        with open (ArchivoNomTarea, "r") as f: 
+            contenido = f.read() 
+
+        print (contenido)
+        Texto6 = tk.Label(VentanaUsuario, text = contenido, font=('Arial bold', 10))
+        Texto6.grid(column=1, row=400)
+                
+
+    def boton5_pulsar():
+        pass
+
+    
+    LargoAuxNom = len(AuxNomTask)
+    lTask = len(Vec_Task)
+    for i in range(0,lTask):
+        datoTask = Vec_Task[i]
+        NomTarea = datoTask[LargoAuxNom:] #se quita el prefijo Task_login_
+        if login_usuario in datoTask: #Seleccionar tareas asociadas al login
+            AuxVecTask.append(NomTarea) #Carga vector con nombres de archivos encontrados
+
+    #Mostrar lista de tareas del usuario
+    Texto5 = tk.Label(VentanaUsuario, text = 'Lista de tareas asignadas: ', font=('Arial bold', 10))
+    Texto5.grid(column=0, row=60)
+    combo_tareas_usuario = ttk.Combobox(VentanaUsuario, state='readonly')
+    combo_tareas_usuario['values'] = AuxVecTask   #asocia el contenido del vector de tareas del usuario
+    combo_tareas_usuario.current(0) #
+    combo_tareas_usuario.grid(column = 1 , row = 60)
+
+    #Boton para ver info tarea seleccionada
+    boton4 = Button(VentanaUsuario, text=" Ver Detalle ", bg="Red",fg="white", command=boton4_pulsar)
+    boton4.grid(column=1, row=300)
+    boton5 = Button(VentanaUsuario, text=" Ocultar Detalle ", bg="Red",fg="white", command=boton5_pulsar)
+    boton5.grid(column=2, row=300) 
+                
+
+
+
+    #Menu 
+    menu = Menu(VentanaUsuario)
+    new_item = Menu(menu)
+    menu.add_cascade(label='Archivo', menu=new_item)
+    new_item.add_command(label='Salir', command=VentanaUsuario.destroy)
+    VentanaUsuario.config(menu=menu)    
+    #Fin Menu
+
+    VentanaUsuario.mainloop()
+    
+    
+#------------------------------------------------------
+#Se declara funcion principal del gestor de tareas
+def GestorTareas():
+    global ventanaprincipal
+    ventanaprincipal = Tk()
+    centrar_pantalla(500,500)
+    ventanaprincipal.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+    ventanaprincipal.title(TituloVentana+' < '+login_usuario+' > ')
+    ventanaprincipal.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+    ventanaprincipal.resizable(0,0)
+
+    #Diccionario tareas
+    dtareas = {1:'Arreglar Patio', 2:'Barrer',3: 'Lavar Loza',4:'Lavar Ropa',5: 'Limpiar Baños',6: 'Limpiar Cocina',7: 'Limpiar Ventanas',8: 'Organizar Habitaciones', 9:'Planchar Ropa', 10:'Trapear Hall'}
+
+    #Menu 
+    menu = Menu(ventanaprincipal)
+    new_item = Menu(menu)
+    menu.add_cascade(label='Archivo', menu=new_item)
+    new_item.add_command(label='Registrar usuario', command=registro)
+    new_item.add_command(label='Asignar Tareas', command=OpcMenu_AsignarTareas)  #ajustar para llamar asignacion tarea
+    new_item.add_command(label='Salir', command=ventanaprincipal.destroy)
+    ventanaprincipal.config(menu=menu)    
+    #Fin Menu
     
     ventanaprincipal.mainloop()
 #Fin de la funcion GestorTareas
-   
-
+    
+#------------------------------------------------------   
 def main():
-    GestorTareas()
+    #GestorTareas()
+    login()  #iniciar con este
 
-
+#------------------------------------------------------
 #Ejecucion de aplicacion principal
 main()    
 
