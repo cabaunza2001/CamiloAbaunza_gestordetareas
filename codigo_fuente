@@ -1,4 +1,3 @@
- 
 """
 Fecha: Diciembre 11 2020
 Autor: Camilo Andres Abaunza Suarez
@@ -235,15 +234,11 @@ def GeneraListaUsr(vector_usr): #Se recibe lista de archivos del directorio de l
         dato = vector_usr[i]
         aux_usr = 'usr_'
         
-        borrar = 'usr_borrar'   #prueba para borrado archivo
+        
         if aux_usr in dato and dato != 'usr_Admin':
             Dic_Usr[i] = dato
             Vec_Usr.append(dato)  #Agrega la cuenta de usuario al vector
-        if borrar in dato:  #de referencia para eliminar
-            remove(borrar)
-            print('Archivo ',borrar,' eliminado')
-            lista_archivos = os.listdir()  #actualiza lista de archivos ubicacion
-            GeneraListaUsr(lista_archivos) #Actualizacion del vector usuarios
+        
 
 #------------------------------------------------------
 #Lee los archivos de la ubicacion de ejecucion de la APP y carga diccionario con los archivos con nombre Task_            
@@ -258,7 +253,7 @@ def GeneraListaTask(vector_task): #se recibe lista archivos del directorio de la
         if aux_task in dato:
             Vec_Task.append(dato)  #Agrega la cuenta de usuario al vector
 
-    print('Vector de tareas: ',Vec_Task)
+    #print('Vector de tareas: ',Vec_Task)
 #------------------------------------------------------ 
 #Funcion para login de usuario correcto 
 def login_correcto():
@@ -458,45 +453,69 @@ def GestorTareasUsuario():
     AuxVecTask = []
     AuxNomTask = 'Task_'+login_usuario+'_'
 
+    def cerrar_info():
+        lista_archivos = os.listdir()  #actualiza lista de archivos ubicacion
+        borrar = ArchivoNomTarea   #prueba para borrado archivo    
+        if borrar in lista_archivos:  #de referencia para eliminar
+            remove(borrar)
+            print('Archivo ',borrar,' eliminado')          
+            GeneraListaTask(lista_archivos) #Actualizacion del vector usuarios
+            LargoAuxNom = len(AuxNomTask)
+            lTask = len(Vec_Task)
+            for i in range(0,lTask):
+                datoTask = Vec_Task[i]
+                NomTarea = datoTask[LargoAuxNom:] #se quita el prefijo Task_login_
+                if login_usuario in datoTask: #Seleccionar tareas asociadas al login
+                    AuxVecTask.append(NomTarea) #Carga vector con nombres de archivos encontrados
+            combo_tareas_usuario['values'] = AuxVecTask        
+   
+
+    
+        ventana_info.destroy()
+
+
+
     def boton4_pulsar(): #Boton para ver la info de la tarea
+        global ventana_info
+        global NomTarea
+        global ArchivoNomTarea
+        ventana_info = Toplevel(VentanaUsuario)
+        ventana_info.title("Info Tarea")
+        centrar_pantalla(300,250)
+        ventana_info.geometry('%dx%d+%d+%d' % (ancho,alto,X,Y)) #
+        ventana_info.iconbitmap("CAbaunza.ico") #Personalizacion de icono ventana
+        Button(ventana_info, text=" Tarea Completada ", command=cerrar_info).pack()
+        ventana_info.resizable(0,0)
+
         valor_combo_tareas_usuario = combo_tareas_usuario.get()
         ArchivoNomTarea = AuxNomTask+valor_combo_tareas_usuario
-        print(ArchivoNomTarea)
         #Abre archivo
         with open (ArchivoNomTarea, "r") as f: 
             contenido = f.read() 
-
-        print (contenido)
-        Texto6 = tk.Label(VentanaUsuario, text = contenido, font=('Arial bold', 10))
-        Texto6.grid(column=1, row=400)
-                
-
-    def boton5_pulsar():
-        pass
-
+        Label(ventana_info, text=contenido).pack()
     
     LargoAuxNom = len(AuxNomTask)
     lTask = len(Vec_Task)
-    for i in range(0,lTask):
-        datoTask = Vec_Task[i]
-        NomTarea = datoTask[LargoAuxNom:] #se quita el prefijo Task_login_
-        if login_usuario in datoTask: #Seleccionar tareas asociadas al login
-            AuxVecTask.append(NomTarea) #Carga vector con nombres de archivos encontrados
+    if lTask > 0:
+        for i in range(0,lTask):
+            datoTask = Vec_Task[i]
+            NomTarea = datoTask[LargoAuxNom:] #se quita el prefijo Task_login_
+            if login_usuario in datoTask: #Seleccionar tareas asociadas al login
+                AuxVecTask.append(NomTarea) #Carga vector con nombres de archivos encontrados
+        global combo_tareas_usuario
+        Texto5 = tk.Label(VentanaUsuario, text = 'Lista de tareas asignadas: ', font=('Arial bold', 10))
+        Texto5.grid(column=0, row=60)
+        combo_tareas_usuario = ttk.Combobox(VentanaUsuario, state='readonly')
+        combo_tareas_usuario['values'] = AuxVecTask   #asocia el contenido del vector de tareas del usuario
+        #combo_tareas_usuario.current(0) #
+        combo_tareas_usuario.grid(column = 1 , row = 60)
 
-    #Mostrar lista de tareas del usuario
-    Texto5 = tk.Label(VentanaUsuario, text = 'Lista de tareas asignadas: ', font=('Arial bold', 10))
-    Texto5.grid(column=0, row=60)
-    combo_tareas_usuario = ttk.Combobox(VentanaUsuario, state='readonly')
-    combo_tareas_usuario['values'] = AuxVecTask   #asocia el contenido del vector de tareas del usuario
-    combo_tareas_usuario.current(0) #
-    combo_tareas_usuario.grid(column = 1 , row = 60)
-
-    #Boton para ver info tarea seleccionada
-    boton4 = Button(VentanaUsuario, text=" Ver Detalle ", bg="Red",fg="white", command=boton4_pulsar)
-    boton4.grid(column=1, row=300)
-    boton5 = Button(VentanaUsuario, text=" Ocultar Detalle ", bg="Red",fg="white", command=boton5_pulsar)
-    boton5.grid(column=2, row=300) 
-                
+        #Boton para ver info tarea seleccionada
+        boton4 = Button(VentanaUsuario, text=" Ver Detalle ", bg="Red",fg="white", command=boton4_pulsar)
+        boton4.grid(column=2, row=60)
+    else:
+        print('No tiene tareas asignadas')
+            
 
 
 
@@ -546,4 +565,3 @@ def main():
 #------------------------------------------------------
 #Ejecucion de aplicacion principal
 main()    
-
